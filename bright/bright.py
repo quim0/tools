@@ -20,7 +20,12 @@ POSSIBLE_BRIGHTNESS_FILES = map(
     ['actual_brightness', 'brightness']
     )
 BRIGHTNESS_FILE = None
-BRIGHTNESS_FILE_MOD = 0b1000000110100100
+
+def check_bits(f):
+    # Checks if file is writable
+    w_mask = 0b010000000
+    bits = os.stat(f).st_mode
+    return (bits & w_mask) != 0
 
 def get_brightness_file():
     global BRIGHTNESS_FILE
@@ -28,7 +33,7 @@ def get_brightness_file():
         return BRIGHTNESS_FILE
 
     for f in POSSIBLE_BRIGHTNESS_FILES:
-        if os.stat(f).st_mode == BRIGHTNESS_FILE_MOD:
+        if check_bits(f):
             BRIGHTNESS_FILE = f
             return BRIGHTNESS_FILE
 
