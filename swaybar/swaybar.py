@@ -24,7 +24,12 @@ BATTERY_STATUS_FILE = os.path.join(
 
 def get_battery_status():
     with open(BATTERY_STATUS_FILE, 'r') as f:
-        return f.read().strip('\n')
+        res = f.read().strip('\n')
+        if res in ['Charging', 'Full']:
+            return '🔌'
+        if res == 'Discharging':
+            return '🔋'
+        return '?'
 
 BATTERY_PERCENTAGE_FILE = os.path.join(
     get_battery_path(),
@@ -75,7 +80,7 @@ def gen_swaybar_string():
     if get_battery_alarm():
         sb_elems.append('[!]')
     sb_elems.append(str(get_battery_percentage()) + '%')
-    sb_elems.append('[' + get_battery_status() + ']')
+    sb_elems.append('(' + get_battery_status() + ')')
     sb_elems.append('--')
     # DATE
     sb_elems.append(get_date())
