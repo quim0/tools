@@ -1,7 +1,9 @@
-import os
+import os, sys
 import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
+
+SWAYBAR_PATH = os.path.join(os.getenv('HOME'), '.swaybar')
 
 BATTERY_PATH_ROOT = '/sys/class/power_supply/'
 BATTERY_PATH = None
@@ -69,8 +71,45 @@ def get_date():
     now = datetime.now()
     return now.strftime('%d-%m-%Y %H:%M:%S')
 
+# ---------------- COUNTDOWN ----------------
+
+'''
+COUNTDOWN file format:
+start_time_epoch;duration_in_seconds
+'''
+COUNTDOWN_FILE_PATH = os.path.join(SWAYBAR_PATH, 'cron')
+def get_countdown():
+    if os.path.isfile(COUNTDOWN_FILE_PATH):
+        with open(COUNTDOWN_FILE_PATH, 'r') as f:
+            ts, duration = f.read().split(';')
+            start = datetime.fromtimestamp(float(ts))
+            duration = timedelta(seconds=int(duration))
+        now = datetime.now()
+        if (start + duration) < now:
+            # Countdown already finished
+            return None
+        else:
+            delta = (now - start)
+            r = duration - delta
+            hours = int(r.seconds / 3600)
+            minutes = int((r.seconds - (hours * 3600)) / 60)
+            seconds = r.seconds % 60
+            return f'{hours}:{minutes}:{seconds}'
+    return None
+
+def set_countdown(cd):
+    with open(COUNTDOWN_FILE_PATH, 'w') as f:
+        now = datetime.now().timestamp()
+        f.write(f'{now};{cd}')
+
+
 def gen_swaybar_string():
     sb_elems = []
+    # COUNTDOWN
+    cd = get_countdown()
+    if cd is not None:
+        sb_elems.append(f'⏳ {cd}')
+        sb_elems.append(f'--')
     # WIFI
     ssid = get_wifi_ssid().decode('utf-8')
     if len(ssid) > 0:
@@ -88,4 +127,11 @@ def gen_swaybar_string():
     return ' '.join(sb_elems)
 
 if __name__ == '__main__':
+    if len(sys.argv) == 3:
+        if sys.argv[1] == 'set_countdown':
+            try:
+                cd = int(sys.argv[2])
+                set_countdown(cd)
+            except:
+                pass
     print(gen_swaybar_string())
